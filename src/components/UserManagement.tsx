@@ -1,61 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Users, Plus, Edit, Trash2, Shield, Mail, Calendar, Search } from 'lucide-react';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Input from './ui/Input';
+import { api } from '../utils/api';
 
 const UserManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const mockUsers = [
-    {
-      id: '1',
-      name: 'System Administrator',
-      email: 'admin@booksnap.com',
-      role: 'super_admin',
-      joinDate: '2024-01-01',
-      lastActive: '2024-01-15',
-      totalScans: 1250,
-      status: 'active',
-      avatar: 'https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'teacher@booksnap.com',
-      role: 'educator',
-      joinDate: '2024-02-15',
-      lastActive: '2024-01-14',
-      totalScans: 450,
-      status: 'active',
-      avatar: 'https://images.pexels.com/photos/3767411/pexels-photo-3767411.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
-    },
-    {
-      id: '3',
-      name: 'Alex Chen',
-      email: 'student@booksnap.com',
-      role: 'student',
-      joinDate: '2024-03-01',
-      lastActive: '2024-01-13',
-      totalScans: 89,
-      status: 'active',
-      avatar: 'https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
-    },
-    {
-      id: '4',
-      name: 'Maria Garcia',
-      email: 'maria@example.com',
-      role: 'educator',
-      joinDate: '2024-02-20',
-      lastActive: '2024-01-12',
-      totalScans: 234,
-      status: 'inactive',
-      avatar: 'https://images.pexels.com/photos/3763188/pexels-photo-3763188.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await api<any[]>('/api/users');
+        setUsers(data);
+      } catch (e: any) {
+        setError(e.message || 'Failed to load users');
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+    load();
+  }, []);
 
   const getRoleBadge = (role: string) => {
-    const colors = {
+    const colors: Record<string, string> = {
       super_admin: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
       admin: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300',
       educator: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
@@ -81,6 +54,15 @@ const UserManagement: React.FC = () => {
     );
   };
 
+  const filtered = users.filter((u) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
+
+  if (loading) return <div className="p-6 text-gray-600 dark:text-gray-300">Loading users...</div>;
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -100,10 +82,7 @@ const UserManagement: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Total Users', value: '234', icon: Users, color: 'text-blue-600' },
-          { label: 'Active Users', value: '189', icon: Shield, color: 'text-green-600' },
-          { label: 'Educators', value: '45', icon: Users, color: 'text-purple-600' },
-          { label: 'Students', value: '144', icon: Users, color: 'text-orange-600' }
+          { label: 'Total Users', value: String(users.length), icon: Users, color: 'text-blue-600' },
         ].map((stat, index) => (
           <Card key={index} variant="elevated" className="p-6">
             <div className="flex items-center justify-between">
@@ -177,15 +156,11 @@ const UserManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {mockUsers.map((user) => (
+              {filtered.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="w-10 h-10 rounded-full"
-                      />
+                      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700" />
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {user.name}
@@ -201,7 +176,7 @@ const UserManagement: React.FC = () => {
                     {getRoleBadge(user.role)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(user.status)}
+                    {getStatusBadge('active')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {user.totalScans}
@@ -209,7 +184,7 @@ const UserManagement: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center">
                       <Calendar className="w-3 h-3 mr-1" />
-                      {new Date(user.lastActive).toLocaleDateString()}
+                      {new Date(user.joinDate).toLocaleDateString()}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

@@ -8,30 +8,29 @@ import Card from './ui/Card';
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { login, isLoading } = useAuth();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const { login, register, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
+    if (!email || !password || (mode === 'register' && !name)) {
       setError('Please fill in all fields');
       return;
     }
 
-    const success = await login(email, password);
+    const success = mode === 'login'
+      ? await login(email, password)
+      : await register(name, email, password);
+
     if (!success) {
-      setError('Invalid credentials. Please try again.');
+      setError(mode === 'login' ? 'Invalid credentials. Please try again.' : 'Registration failed. Try a different email.');
     }
   };
-
-  const demoAccounts = [
-    { email: 'admin@booksnap.com', role: 'Super Admin', password: 'password' },
-    { email: 'teacher@booksnap.com', role: 'Educator', password: 'password' },
-    { email: 'student@booksnap.com', role: 'Student', password: 'password' }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-purple-900 flex items-center justify-center p-4">
@@ -85,7 +84,7 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right side - Login Form */}
+        {/* Right side - Login/Register Form */}
         <div className="w-full max-w-md mx-auto lg:max-w-none">
           <Card variant="glass" className="p-8">
             <div className="text-center mb-8">
@@ -97,11 +96,22 @@ const LoginPage: React.FC = () => {
                   BookSnap
                 </h1>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h2>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">Sign in to your account to continue</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{mode === 'login' ? 'Welcome back' : 'Create your account'}</h2>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">{mode === 'login' ? 'Sign in to continue' : 'Register to get started'}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {mode === 'register' && (
+                <Input
+                  type="text"
+                  label="Full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  required
+                />
+              )}
+
               <Input
                 type="email"
                 label="Email address"
@@ -141,28 +151,17 @@ const LoginPage: React.FC = () => {
                 className="w-full"
                 size="lg"
               >
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? (mode === 'login' ? 'Signing in...' : 'Creating account...') : (mode === 'login' ? 'Sign in' : 'Create account')}
               </Button>
-            </form>
 
-            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Demo accounts:</p>
-              <div className="space-y-2">
-                {demoAccounts.map((account, index) => (
-                  <button
-                    key={index}
-                    className="w-full text-left p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    onClick={() => {
-                      setEmail(account.email);
-                      setPassword(account.password);
-                    }}
-                  >
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{account.role}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{account.email}</div>
-                  </button>
-                ))}
+              <div className="text-sm text-center text-gray-600 dark:text-gray-400">
+                {mode === 'login' ? (
+                  <button type="button" className="underline" onClick={() => setMode('register')}>Need an account? Register</button>
+                ) : (
+                  <button type="button" className="underline" onClick={() => setMode('login')}>Already have an account? Sign in</button>
+                )}
               </div>
-            </div>
+            </form>
           </Card>
         </div>
       </div>
