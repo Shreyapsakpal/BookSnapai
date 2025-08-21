@@ -1,0 +1,70 @@
+generator client {
+	provider = "prisma-client-js"
+}
+
+datasource db {
+	provider = "sqlite"
+	url      = env("DATABASE_URL")
+}
+
+model User {
+	id           String       @id @default(cuid())
+	email        String       @unique
+	name         String
+	passwordHash String
+	role         String       @default("student")
+	joinDate     DateTime     @default(now())
+	streak       Int          @default(0)
+	totalScans   Int          @default(0)
+	avatar       String?
+	preferencesJson String    @default("{}")
+	friendsJson  String       @default("[]")
+	books        Book[]
+	annotations  Annotation[]
+}
+
+model Book {
+	id             String     @id @default(cuid())
+	title          String
+	author         String?
+	scanDate       DateTime   @default(now())
+	user           User       @relation(fields: [userId], references: [id])
+	userId         String
+	pages          BookPage[]
+	totalPages     Int        @default(0)
+	tagsJson       String     @default("[]")
+	conceptsJson   String     @default("[]")
+	isPublic       Boolean    @default(false)
+	thumbnail      String?
+}
+
+model BookPage {
+	id           String    @id @default(cuid())
+	book         Book      @relation(fields: [bookId], references: [id])
+	bookId       String
+	pageNumber   Int
+	imageUrl     String
+	pdfUrl       String?
+	ocrText      String
+	aiSummary    String
+	aiKeyPointsJson String  @default("[]")
+	aiConceptsJson  String  @default("[]")
+	difficulty   String
+	annotations  Annotation[]
+}
+
+model Annotation {
+	id        String   @id @default(cuid())
+	page      BookPage @relation(fields: [pageId], references: [id])
+	pageId    String
+	type      String
+	content   String
+	posX      Float
+	posY      Float
+	posWidth  Float
+	posHeight Float
+	color     String
+	user      User     @relation(fields: [userId], references: [id])
+	userId    String
+	createdAt DateTime @default(now())
+}
